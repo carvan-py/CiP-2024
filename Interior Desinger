@@ -1,0 +1,169 @@
+import turtle as t
+import random
+
+"""
+INTERIOR DESIGNER
+
+This program helps design furniture in a room. 
+The user is prompted to enter dimentions for the following:
+
+- room
+- couch
+- coffee table
+
+The user may reject a design, and the program will generate 
+new, random positioning of the same couch and coffee table.
+If a user enters anything besides 'y/Y/n/N' the program will re-prompt
+the user.
+
+The program accounts for furniture overlap (and skips those arrangements)
+and will only display options in which there is no overlap.
+
+"""
+
+
+# Enlarges the visualization.
+SCALE = 100
+
+def main():
+
+    # Get room/furniture measurements from user.
+    print("Hi! Let's plan your new space.")
+    room_length,room_width = room()
+    couch_len,couch_wid = couch()
+    table_diam = table()
+
+    # Set up space by drawing room and couch first;
+    # Draw table only if it doesn't overlap with couch.
+    couch_blx,couch_bly,cx,cy = room_setup(t,room_length,room_width,couch_len,couch_wid,table_diam)
+    new_arrangement(t,table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width)
+
+    # If user enters n, new arrangement will continue to generate
+    ans = str.lower(input("Do you like this arrangement? (Y/N)"))
+    check_ans(ans,t,table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width)
+    
+
+
+def check_ans(ans,t,table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width):
+    while ans !="n" and ans != "y":
+        print("Sorry, that entry is not recognized. " + 
+            "Please enter 'y' if you liked the design " +
+            "and 'n' if you did not." )
+        ans = str.lower(input("Do you like this arrangement? (Y/N)"))
+    while ans == ("n"):
+        new_arrangement(t,table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width)
+        ans = str.lower(input("Do you like this arrangement? (Y/N)"))
+    print("Great! Have fun with your move. Click on your design to close out program.")
+    t.Screen().exitonclick()
+
+def new_arrangement(t,table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width):
+    couch_blx,couch_bly,cx,cy = room_setup(t,room_length,room_width,couch_len,couch_wid,table_diam)
+    while check_overlap(table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width) == True:
+        cx,cy = mix_up(room_length,room_width,table_diam)
+    draw_table(t,room_length,room_width,table_diam,cx,cy)
+    t.hideturtle()
+
+def mix_up(room_length,room_width,table_diam):
+    cx = random.randint(table_diam/2,room_length-(table_diam/2))
+    cy = random.randint(table_diam/2,(room_width-table_diam/2))
+    return cx,cy
+
+def check_overlap(table_diam,cx,cy,couch_len,couch_wid,couch_blx,couch_bly,room_length,room_width):
+    cx = cx-(room_length/2)
+    cy = cy-(room_width/2)
+    if (
+    # table bottom boundary is less than couch top boundary
+    (cy - table_diam/2) <= (couch_bly + couch_wid) and 
+    # table top boundary is greater than couch bottom boundary
+    (cy + table_diam/2) >= couch_bly and
+    # tabe right boundary is greater than couch left boundary
+    (cx + table_diam/2) >= couch_blx and
+    # table left boundary is greater than couch right boundary
+    (cx - table_diam/2) <= (couch_blx + couch_len)
+    ):
+        return True
+
+def draw_table(t,room_length,room_width,table_diam,cx,cy):
+    t.speed(0)
+    t.penup()
+    r = table_diam/2
+    color = "white"
+    cx = cx-(room_length/2)
+    cy = cy-(room_width/2)
+    draw_circle(t,table_diam,r,cx,cy,color)
+    return cx,cy
+
+def draw_couch(t,room_length,room_width,couch_len,couch_wid):
+    couch_blx = random.randint(0-(room_length/2),(room_length/2)-couch_len)
+    couch_bly = random.randint(0-(room_width/2),(room_width/2)-couch_wid)
+
+    # Identifies random (x,y) coordinates within the bounds of the room walls.
+    # This will be the bottom left corner of the rectangle.
+    color = "brown"
+    draw_rectangle(t,couch_len,couch_wid,couch_blx,couch_bly,color)
+    return couch_blx,couch_bly
+
+def draw_room(t,room_length,room_width):
+    # Draws a rectangle with dimensions entered for room.
+    # Centers room so center is origin (0,0). All other shapes do the same.
+    color = "gray"
+    draw_rectangle(t,room_length,room_width,0-(room_length/2),0-(room_width/2),color)
+
+def draw_circle(t,table_diam,r,cx,cy,color):
+    # Moves turtle to bottom of circle.
+    t.speed(0)
+    t.penup()
+    # adjusts pen to go from center to bottom edge.
+    t.goto(cx,cy-(table_diam/2))
+    t.pendown()
+    t.fillcolor(color)
+    t.begin_fill()
+
+    t.circle(r)
+    t.end_fill()
+    return cx,cy
+
+def room_setup(t,room_length,room_width,couch_len,couch_wid,table_diam):
+    # When user rejects design, screen will clear and random new room will be created.
+    t.clearscreen()
+    draw_room(t,room_length, room_width)
+    couch_blx,couch_bly = draw_couch(t,room_length,room_width,couch_len,couch_wid)
+    cx,cy = mix_up(room_length,room_width,table_diam) # Randomizes center of cicular table
+    return couch_blx,couch_bly,cx,cy
+
+def draw_rectangle(t,x,y,blx,bly,color):
+    # Go to corner of rectangle based on bottom left corner. 
+    # Works for any general rectangle.
+    t.speed(0)
+    t.penup()
+    t.goto(blx,bly)
+    t.pendown()
+    t.fillcolor(color)
+    t.begin_fill()
+  
+    for i in range(2):
+        # Draw  one half of a rectangle starting at bottom left corner.
+        t.forward(x)  #Move forward by x units.
+        t.left(90) # Turn by 90 degrees.
+
+        # Draw second half of rectangle.
+        t.forward(y)
+        t.left(90)
+    t.end_fill()
+
+
+# User input for room, couch and table dimensions
+def table():
+    table_diam = input("Enter the diameter of your coffee table (in meters): ")
+    return SCALE*int(table_diam)
+
+def couch():
+    couch_len, couch_wid = input("Enter the length & width of your couch (in meters) separated by a comma: ").split(',')
+    return SCALE*int(couch_len), SCALE*int(couch_wid)
+
+def room():
+    room_length, room_width = input("Enter the length & width of your room (in meters) separated by a comma: ").split(',')
+    return SCALE*int(room_length), SCALE*int(room_width)
+
+if __name__ == '__main__':
+    main()
